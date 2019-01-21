@@ -2,10 +2,10 @@
 
 A library and command-line utility for acoustic raytracing.
 
-Val Schmidt
-Eric Keilty
-Center for Coastal and Ocean Mapping
-University of New Hamphshire
+Val Schmidt  
+Eric Keilty  
+Center for Coastal and Ocean Mapping   
+University of New Hamphshire  
 Copyright 2015-2019
 
 lib_raytrace is a C++ library and command-line utility for acoustic ray-tracing. It is based on MATLAB code written by Val, which uses the gradient-based approximation to Snell's law, and coded in C++ by Eric (as a high-school student) during a 2015 summer internship at the Center. 
