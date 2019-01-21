@@ -3,7 +3,7 @@
 //  raytrace
 //
 //  Created by Eric Keilty and Val Schmit on 7/9/15.
-//  Copyright (c) 2015 University of New Hampshire. All rights reserved.
+//  Copyright (c) 2015-2019 University of New Hampshire. All rights reserved.
 //
 
 #include "ssp.h"
@@ -22,23 +22,54 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     
+    // FIX: This logic isn't quite right. If one doesn't specify the twtt and launch angle
+    // FIX: individually then one must specify a file containing pairs of them. 
     if (argc < 3)
     {
-        printf("Usage: not enough arguments\n");
+    	printf("\n");
+        printf("Error: not enough arguments!\n");
+        printf("\n");
+        printf("Usage:\n");
+        printf("    raytrace -ssp <svp_file.txt> [-a <launch_angle> -t <owtt> | -angle <angle_tt.txt>] \n");
+        printf("        [-d decimation_factor]\n");
+        printf("\n");
+        printf("    svp_file.txt: Space or comma delimited file, containing two columns of \n");
+        printf("                  depths in meters and sound speeds in m/s.\n");
+        printf("    launch_angle: Launch angle in degrees, down from horizontal.\n");
+        printf("    owtt:         One-way travel time in seconds.\n");
+        printf("    angle_tt.txt: Optionally, a list of launch angles and one way travel times\n");
+        printf("                  may be specified in this space or comma delimited file, \n");
+        printf("                  containing two columns of values. [angle twtt] \n");
+        printf("    decimation_factor: When specified, the sound speed profile is \n");
+        printf("                  decimated by omitting entries whose gradient is larger than \n");
+        printf("                  the decimation_factor.\n");
+        printf("    launch_angle: Not sure.\n");
+        printf("\n");
         return 1;
     }
     
+    // Input arguments
     string svp_txt;
     string angle_txt;
-    bool angle_exists = false;
+    string out_file;
     double decimate = 0;
-    double default_max_gradient = 0.01;
     double launch_angle = 0;
     double travel_time = 0;
-    string out_file;
+    bool angle_exists = false;
+    double default_max_gradient = 0.01;
+
+    
+    // Utility variables
     bool out_file_exist = false;
+    string line;
+    int number_of_lines = 0;
+    vector<double> z;   // Depth, m
+    vector<double> c;	 // Sound speed, m/s
+    vector<double> theta;                // Launch angle, deg
+    vector<double> tt;                   // Travel time, sec.
+
     
-    
+    // Parse the input arguments. 
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-ssp") == 0)
@@ -76,9 +107,9 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    //checking if files are defined
-    string line;
-    
+    // Verifying that the files exist and are readable.
+
+	// output file.    
     ifstream out_file_check(out_file);
     if (getline(out_file_check, line))
     {
@@ -86,6 +117,7 @@ int main(int argc, char* argv[]) {
     }
     out_file_check.close();
     
+    // sound speed file
     ifstream svp_file_check(svp_txt);
     if (!getline(svp_file_check, line))
     {
@@ -94,12 +126,13 @@ int main(int argc, char* argv[]) {
     }
     svp_file_check.close();
     
+    // angle twtt file
     ifstream angle_file_check(angle_txt);
     if (!getline(angle_file_check, line))
     {
         if (launch_angle <= 0 || travel_time <= 0)
         {
-            printf("Usage: either angle/ travel time text file not found or one of them had an input less than or equal to zero\n");
+            printf("Usage: either angle/travel time text file not found or one of them had an input less than or equal to zero\n");
             return 1;
         }
         else if (launch_angle == 90)
@@ -112,21 +145,22 @@ int main(int argc, char* argv[]) {
         angle_exists = true;
     }
     angle_file_check.close();
-    
-    
-    char delim = ',';
-    int number_of_lines = 0;
+
+    //counting number of lines in txt file    
     ifstream svp_file(svp_txt);
-    //counting number of lines in txt file
     while(getline(svp_file, line))
     {
         ++number_of_lines;
     }
+    z.resize(number_of_lines);
+    c.resize(number_of_lines);
     
-    vector<double> z(number_of_lines);
-    vector<double> c(number_of_lines);
+ 	// Read the Sound Speed Profile file:
+ 	// handling either space or comma delimiters...   
+    char delim = ',';
     
-    //basically if line.find(delim) is defined properly, then continue
+    // <line> currently has the last line in the file...
+    // basically if line.find(delim) is defined properly, then continue
     //else there must be no delimiter, so this method won't work
     //IMPORTANT: this makes the assumption that the last line of the code is
     //the same as the previous thousand
@@ -139,7 +173,7 @@ int main(int argc, char* argv[]) {
         svp_file.clear();
         svp_file.seekg (0, ios::beg);
         int num_line = 0;
-        
+            
         while(getline(svp_file, line))
         {
             //if there is only white space between the numebrs
@@ -183,10 +217,9 @@ int main(int argc, char* argv[]) {
         }
     }
     svp_file.close();
+
     
-    
-    vector<double> theta;
-    vector<double> tt;
+    // Read the angle and travel time file:
     if (angle_exists)
     {
         delim = ',';
